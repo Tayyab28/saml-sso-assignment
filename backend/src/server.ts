@@ -1,16 +1,17 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import { SessionService } from './auth/session.service';
+
 import { SamlService } from './saml/saml.service';
+import { SessionService } from './auth/session.service';
 
 const app = express();
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-
 const PORT = 3000;
 
 const samlService = new SamlService();
 const sessionService = new SessionService();
+
+app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
@@ -23,9 +24,17 @@ app.get('/auth/saml/metadata', (_req, res) => {
 });
 
 app.get('/auth/saml/login', async (_req, res) => {
-  const loginUrl = await samlService.getLoginUrl();
+  try {
+    const loginUrl = await samlService.getLoginUrl();
 
-  res.redirect(loginUrl);
+    return res.redirect(loginUrl);
+  } catch (error) {
+    console.error('Failed to generate SAML login URL:', error);
+
+    return res.status(500).json({
+      error: 'Unable to start SAML login',
+    });
+  }
 });
 
 app.post('/auth/saml/callback', async (req, res) => {
@@ -38,17 +47,35 @@ app.post('/auth/saml/callback', async (req, res) => {
       });
     }
 
-const user = {
-  id: result.profile.nameID,
-  email:
-    typeof result.profile.emailaddress === 'string'
-      ? result.profile.emailaddress
-      : undefined,
-  name:
-    typeof result.profile.name === 'string'
-      ? result.profile.name
-      : undefined,
-};
+const attributes =
+  typeof result.profile.attributes === 'object' &&
+  result.profile.attributes !== null
+    ? result.profile.attributes as Record<string, unknown>
+    : {};
+    
+    const emailClaim =
+      attributes[
+        'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'
+      ];
+
+    const nameClaim =
+      attributes[
+        'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'
+      ];
+
+    const user = {
+      id: result.profile.nameID,
+
+      email:
+        typeof emailClaim === 'string'
+          ? emailClaim
+          : undefined,
+
+      name:
+        typeof nameClaim === 'string'
+          ? nameClaim
+          : undefined,
+    };
 
     const sessionId = sessionService.createSession(user);
 
