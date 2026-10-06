@@ -3,12 +3,14 @@ import cookieParser from 'cookie-parser';
 
 import { SamlService } from './saml/saml.service';
 import { SessionService } from './auth/session.service';
+import { AssertionReplayStore } from './saml/assertion-replay.store';
 
 const app = express();
 const PORT = 3000;
 
 const samlService = new SamlService();
 const sessionService = new SessionService();
+const assertionReplayStore = new AssertionReplayStore();
 
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -42,17 +44,32 @@ app.post('/auth/saml/callback', async (req, res) => {
     const result = await samlService.validatePostResponse(req.body);
 
     if (!result.profile) {
+  return res.status(401).json({
+    error: 'SAML authentication failed',
+  });
+}
+
+    const assertionId = samlService.getAssertionId(result);
+
+if (!assertionId) {
+  return res.status(401).json({
+    error: 'SAML assertion ID is missing',
+  });
+}
+ 
+   if (assertionReplayStore.hasBeenConsumed(assertionId)) {
       return res.status(401).json({
-        error: 'SAML authentication failed',
-      });
+        error: 'SAML assertion has already been used',
+     });
     }
 
+// Extract identity...
 const attributes =
   typeof result.profile.attributes === 'object' &&
   result.profile.attributes !== null
     ? result.profile.attributes as Record<string, unknown>
     : {};
-    
+
     const emailClaim =
       attributes[
         'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'
@@ -76,6 +93,11 @@ const attributes =
           ? nameClaim
           : undefined,
     };
+
+    assertionReplayStore.consume(
+  assertionId,
+  Date.now() + 5 * 60 * 1000,
+);
 
     const sessionId = sessionService.createSession(user);
 

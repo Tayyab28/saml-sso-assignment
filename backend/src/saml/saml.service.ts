@@ -28,4 +28,22 @@ export class SamlService {
   ) {
     return this.saml.validatePostResponseAsync(body);
   }
+
+getAssertionId(
+  result: Awaited<ReturnType<SAML['validatePostResponseAsync']>>,
+): string | null {
+  const assertion = result.profile?.getAssertion?.() as {
+    Assertion?: {
+      $?: {
+        ID?: unknown;
+      };
+    };
+  };
+
+  const assertionId = assertion.Assertion?.$?.ID;
+
+  return typeof assertionId === 'string'
+    ? assertionId
+    : null;
+}
 }
