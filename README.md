@@ -20,6 +20,7 @@ The application consists of two parts:
 
 The backend acts as the SAML Service Provider (SP), while Auth0 acts as the Identity Provider (IdP).
 
+```text
                     ┌──────────────┐
                     │    Auth0     │
                     │     IdP      │
@@ -39,12 +40,13 @@ The backend acts as the SAML Service Provider (SP), while Auth0 acts as the Iden
                              │
                              ▼
                       Authenticated User
-
+```
 
 ---
 
 ## Project Structure
 
+```text
 saml-sso-assignment/
 ├── backend/
 │   ├── src/
@@ -69,6 +71,7 @@ saml-sso-assignment/
 ├── .gitignore
 ├── DECISIONS.md
 └── README.md
+``` 
 
 
 ## Prerequisites
@@ -109,10 +112,13 @@ cd backend
 cp ../.env.example .env
 ```
 The required variables are:
+
+```env
 SAML_ISSUER=
 SAML_CALLBACK_URL=
 SAML_ENTRY_POINT=
 SAML_IDP_CERT=
+```
 
 ### Frontend Environment
 
