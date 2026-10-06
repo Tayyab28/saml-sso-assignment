@@ -1,16 +1,25 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
-
+import cors from 'cors';
 import { SamlService } from './saml/saml.service';
 import { SessionService } from './auth/session.service';
 import { AssertionReplayStore } from './saml/assertion-replay.store';
+import { AuthenticatedRequest, createAuthMiddleware } from './auth/auth.middleware';
 
 const app = express();
+
+app.use(
+  cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+  }),
+);
 const PORT = 3000;
 
 const samlService = new SamlService();
 const sessionService = new SessionService();
 const assertionReplayStore = new AssertionReplayStore();
+const requireAuth = createAuthMiddleware(sessionService);
 
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -108,10 +117,7 @@ const attributes =
       maxAge: 60 * 60 * 1000,
     });
 
-    return res.json({
-      message: 'SAML authentication successful',
-      user,
-    });
+return res.redirect('http://localhost:5173');
   } catch (error) {
     console.error('SAML validation failed:', error);
 
@@ -121,25 +127,21 @@ const attributes =
   }
 });
 
-app.get('/auth/me', (req, res) => {
+app.get('/auth/me', requireAuth, (req: AuthenticatedRequest, res) => {
+  return res.json({ user: req.user });
+});
+
+app.post('/auth/logout', (req, res) => {
   const sessionId = req.cookies.session_id;
 
-  if (!sessionId) {
-    return res.status(401).json({
-      error: 'Not authenticated',
-    });
+  if (sessionId) {
+    sessionService.deleteSession(sessionId);
   }
 
-  const user = sessionService.getSession(sessionId);
-
-  if (!user) {
-    return res.status(401).json({
-      error: 'Session expired or invalid',
-    });
-  }
+  res.clearCookie('session_id');
 
   return res.json({
-    user,
+    message: 'Logged out successfully',
   });
 });
 
