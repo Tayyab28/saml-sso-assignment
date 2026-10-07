@@ -43,6 +43,11 @@ The backend acts as the SAML Service Provider (SP), while Auth0 acts as the Iden
 ```
 
 ---
+## Demo Video
+
+[Watch the 5-minute Loom walkthrough](https://www.loom.com/share/f8c1c75b344a4c81b1f480af177cc095)
+
+---
 
 ## Project Structure
 
