@@ -12,6 +12,8 @@ export class SamlService {
       idpCert: samlConfig.idpCert,
       wantAssertionsSigned: true,
       wantAuthnResponseSigned: false,
+      acceptedClockSkewMs: 5000,
+
     });
   }
 

@@ -58,7 +58,7 @@ function App() {
         <p>Start authentication from this application.</p>
 
         <a href={`${backendUrl}/auth/saml/login`}>
-          <button>Login via Application</button>
+          <button>Start SP-Initiated Login</button>
         </a>
       </section>
 
@@ -72,7 +72,7 @@ function App() {
           target="_blank"
           rel="noreferrer"
         >
-          <button>Login via Auth0</button>
+          <button>Start IdP-Initiated Login</button>
         </a>
       </section>
 
